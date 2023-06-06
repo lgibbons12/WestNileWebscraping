@@ -6,11 +6,10 @@ from selenium.webdriver.common.action_chains import ActionChains
 
 #all the imports
 import pandas as pd
-import time
 
-#set counter to zero for excel sheet creating
-count = 0
-
+url = input("Copy the url here: ")
+file_name = input("What do you want the final excel file to be called? (do not add .xlsx to this) ")
+global df
 #create webdriver
 options = webdriver.ChromeOptions()
 options.add_argument("--headless=new")
@@ -19,7 +18,11 @@ service = ChromeService(executable_path=DRIVER_PATH)
 driver = webdriver.Chrome(service=service, options=options)
 
 #navigate to page in question (could be an input later)
-driver.get("http://www.idph.state.il.us/envhealth/wnvsurveillance_data_17.htm")
+
+
+driver.get(url)
+
+
 
 #get the html
 html = driver.find_element(By.TAG_NAME, "center").get_attribute("outerHTML")
@@ -27,6 +30,10 @@ html = driver.find_element(By.TAG_NAME, "center").get_attribute("outerHTML")
 #get the table with pandas and put it in an excel sheet
 df_list = pd.read_html(html)
 df = df_list[2]
+
+#get all the rows to be entered into the final dataframe later
+counties = df["County"]
+
 df.to_excel("county.xlsx", index=False)
 
 #get all links
@@ -43,13 +50,14 @@ df = pd.DataFrame(
     {
         "Municipality": ["Test"],
         "Date Collected": ["11/25/2013"],
-        "Animal/Insect": ["Mosquito"]
+        "Animal/Insect": ["Mosquito"],
+        "County": ["NaN"]
 
     }
 )
 
 #function that: gets the page source, grabs the data frame, then appends it to the dataframe
-def getPageSource(lnk):
+def getPageSource(i, lnk):
     driver = webdriver.Chrome(service=service, options=options)
     driver.get(lnk)
 
@@ -57,19 +65,24 @@ def getPageSource(lnk):
 
     temp_df_list = pd.read_html(html)
     temp_df = temp_df_list[2]
+
+    num = len(temp_df.index) + 1
+    series = pd.Series([counties[i] for _ in range(num)])
+    temp_df = temp_df.assign(County = series)
+    
     
     global df
-
     df = df.append(temp_df)
     driver.quit()
 
 
 #append each table from each link to the data frame
-for link in ls:
-    getPageSource(link)
+for i, link in enumerate(ls):
+    per_done = round(i / len(ls) * 100, 2)
+    getPageSource(i, link)
+    print(f"{per_done}% completed!")
 
 #save it all to an excel file
-df.to_excel("Final.xlsx", index=False)
+df.to_excel(f"{file_name}.xlsx", index=False)
 
 
-    
