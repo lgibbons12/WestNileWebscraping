@@ -91,8 +91,6 @@ def getPageSource(i, lnk):
 
 #append each table from each link to the data frame
 for i, link in enumerate(ls):
-    if i > 5:
-        break
     per_done = round(i / len(ls) * 100, 2)
     getPageSource(i, link)
     print(f"{per_done}% completed!")
